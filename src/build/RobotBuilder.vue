@@ -1,5 +1,5 @@
 <template lang="html">
-  <div name="root" class="content">
+  <div v-if="availableParts" class="content">
     <div class="preview">
       <CollapsibleSection>
       <div class="preview-content">
@@ -19,10 +19,6 @@
       <button class="add-to-cart" @click="addToCart()">Add to Cart</button>
     </div>
   <div class="top-row">
-      <!-- <div class="robot-name">
-        {{selectedRobot.head.title}}
-        <span v-if="selectedRobot.head.onSale" class="sale">Sale!</span>
-      </div> -->
       <PartSelector
       :parts="availableParts.heads"
       position="top"
@@ -48,39 +44,32 @@
     position="bottom"
     @partSelected="part => selectedRobot.base=part"/>
   </div>
-  <div name="cartSection">
-    <h1>Cart</h1>
-    <table>
-      <thead>
-        <tr>
-          <th>Robot</th>
-          <th class="cost">Cost</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(robot, index) in cart" :key="index">
-          <td>{{robot.head.title}}</td>
-          <td class="cost">{{robot.cost}}</td>
-        </tr>
-      </tbody>
-    </table>
-
-  </div>
 </div>
 </template>
 
 <script>
-import availableParts from '../data/parts'
-import createdHookMixin from './createdHookMixin'
 import PartSelector from './PartSelector.vue'
 import CollapsibleSection from '../shared/CollapsibleSection.vue'
+import { mapActions } from 'vuex'
 
 export default {
   name: 'RobotBuilder',
+  created () {
+    this.getParts()
+  },
+  beforeRouteLeave (to, from, next) {
+    if (this.addedToCart) {
+      next(true)
+    } else {
+      const response = confirm('You have not added your robot to your cart,' +
+        'are you sure you want to leave?')
+      next(response)
+    }
+  },
   components: { PartSelector, CollapsibleSection },
   data () {
     return {
-      availableParts,
+      addedToCart: false,
       cart: [],
       selectedHeadIndex: 0,
       selectedLeftArmIndex: 0,
@@ -96,8 +85,8 @@ export default {
       }
     }
   },
-  mixins: [createdHookMixin],
   methods: {
+    ...mapActions('robots', ['getParts', 'addRobotToCart']),
     addToCart () {
       const robot = this.selectedRobot
       const cost = robot.head.cost +
@@ -106,7 +95,9 @@ export default {
               robot.rightArm.cost +
               robot.base.cost
 
-      this.cart.push(Object.assign({}, robot, { cost }))
+      this.addRobotToCart(Object.assign({}, robot, { cost }))
+        .then(() => this.$router.push('/cart'))
+      this.addedToCart = true
     }
   },
   computed: {
@@ -117,6 +108,9 @@ export default {
       return { border: this.selectedRobot.head.onSale
         ? '3px solid red'
         : '3px solid gray' }
+    },
+    availableParts () {
+      return this.$store.state.robots.parts
     }
   }
 }
@@ -230,15 +224,6 @@ export default {
     width: 210px;
     padding: 3px;
     font-size: 16px;
-  }
-  td, th {
-    text-align: left;
-    padding: 5px;
-    padding-right: 20px;
-
-  }
-  .cost {
-    text-align: right;
   }
   .sale-border {
     border: 3px solid red;
