@@ -1,5 +1,7 @@
 # build-a-bot
 
+[![Run on Repl.it](https://repl.it/badge/github/cw00dw0rd/robotBuilder)](https://repl.it/github/cw00dw0rd/robotBuilder)
+
 ## Project setup
 ```
 npm install
